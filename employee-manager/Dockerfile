@@ -1,28 +1,33 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-# 1. Instalacja Node.js, NPM i dodatków
+# 1. Instalacja Node.js, NPM
 RUN apk add --no-cache nodejs npm
 
-# 2. Instalacja Node-RED globalnie
+# 2. Instalacja Node-RED i WebSocket
 RUN npm install -g --unsafe-perm node-red \
     && npm install -g node-red-contrib-home-assistant-websocket
 
 # 3. Katalog roboczy
 WORKDIR /data
 
-# 4. Generowanie skryptu run.sh "w locie" (To naprawia błąd s6-overlay!)
-# Używamy printf, aby wymusić poprawne znaki nowej linii (\n)
-RUN printf "#!/bin/sh\n\
-echo 'Uruchamianie Employee Manager...'\n\
-# Uruchom Node-RED wskazując plik settings.js\n\
-exec node --max-old-space-size=256 /usr/local/bin/node-red -s /data/settings.js\n\
-" > /run.sh && chmod a+x /run.sh
+# 4. PRZYGOTOWANIE STARTU (METODA S6 SERVICES)
+# Tworzymy katalog usługi
+RUN mkdir -p /etc/services.d/employee
 
-# 5. Kopiowanie pozostałych plików (bez run.sh, bo stworzyliśmy go wyżej)
+# Tworzymy skrypt startowy bezpośrednio w folderze usług S6.
+# Używamy "with-contenv bashio", co zapewnia dostęp do zmiennych środowiskowych HA.
+RUN echo "#!/usr/bin/with-contenv bashio" > /etc/services.d/employee/run \
+    && echo "echo 'Startowanie Employee Manager (S6 Mode)...'" >> /etc/services.d/employee/run \
+    && echo "cd /data" >> /etc/services.d/employee/run \
+    && echo "# Uruchamiamy Node-RED (bez hardcodowania ścieżki, szukamy w PATH)" >> /etc/services.d/employee/run \
+    && echo "exec node-red -s settings.js --max-old-space-size=256" >> /etc/services.d/employee/run \
+    && chmod a+x /etc/services.d/employee/run
+
+# 5. Kopiowanie plików
 COPY settings.js /data/settings.js
 COPY flows.json /data/flows.json
 COPY ui /data/ui
 
-# 6. Start
-CMD [ "/run.sh" ]
+# UWAGA: Brak CMD na końcu! 
+# Obraz bazowy sam uruchomi wszystko z folderu /etc/services.d
