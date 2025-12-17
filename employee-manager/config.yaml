@@ -1,0 +1,21 @@
+name: Employee Manager
+version: 1.0.9
+slug: employee_manager_v3
+description: Smart Office Manager
+url: https://github.com/k4y0W/addon
+startup: application
+boot: auto
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armv7
+ingress: true
+ingress_port: 1880
+panel_icon: mdi:account-tie
+hassio_api: true
+homeassistant_api: true
+map:
+  - config:rw
+options: {}
+schema: {}
