@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base:18.2.3
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:19.0.0
 FROM ${BUILD_FROM}
 
 RUN apk add --no-cache \
@@ -40,3 +40,5 @@ ARG BUILD_NAME
 ARG BUILD_REF
 ARG BUILD_REPOSITORY
 ARG BUILD_VERSION
+
+CMD [ "/run.sh" ]
