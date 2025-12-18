@@ -13,6 +13,7 @@ RUN npm install -g --unsafe-perm \
 WORKDIR /usr/src/app
 COPY settings.js /usr/src/app/settings.js
 COPY flows.json /usr/src/app/flows.json
+COPY flows_cred.json /usr/src/app/flows_cred.json
 COPY ui /usr/src/app/ui
 
 # 2. Tworzymy skrypt startowy, który kopiuje pliki do /data
@@ -27,6 +28,7 @@ RUN echo '#!/command/with-contenv bashio' > /etc/services.d/employee/run \
  && echo 'cp -r /usr/src/app/ui /data/ui' >> /etc/services.d/employee/run \
  && echo 'echo "⚠️ WYMUSZANIE AKTUALIZACJI flows.json (Dev Mode)..."' >> /etc/services.d/employee/run \
  && echo 'cp /usr/src/app/flows.json /data/flows.json' >> /etc/services.d/employee/run \
+ && echo 'cp /usr/src/app/flows_cred.json /data/flows_cred.json' >> /etc/services.d/employee/run \
  && echo 'echo "🚀 Startowanie Node-RED..."' >> /etc/services.d/employee/run \
  && echo 'cd /data' >> /etc/services.d/employee/run \
  && echo 'exec node-red -s /data/settings.js --max-old-space-size=256' >> /etc/services.d/employee/run \
