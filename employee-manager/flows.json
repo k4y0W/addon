@@ -1,0 +1,409 @@
+[
+    {
+        "id": "tab_employee_manager",
+        "type": "tab",
+        "label": "Employee Manager Backend",
+        "disabled": false,
+        "info": "Backend zastępujący skrypty Python (Flask + Logic Loop)."
+    },
+    {
+        "id": "group_api",
+        "type": "group",
+        "z": "tab_employee_manager",
+        "name": "API Endpoints (Flask Replacement)",
+        "style": {
+            "stroke": "#92d04f",
+            "fill": "#e3f2fd",
+            "label": true
+        },
+        "nodes": [
+            "node_http_get_employees",
+            "node_http_post_employees",
+            "node_http_delete_employees",
+            "node_http_monitor",
+            "node_http_root",
+            "node_get_clean_sensors_api"
+        ],
+        "x": 34,
+        "y": 39,
+        "w": 652,
+        "h": 362
+    },
+    {
+        "id": "group_logic",
+        "type": "group",
+        "z": "tab_employee_manager",
+        "name": "Core Logic Loop (employelogic.py)",
+        "style": {
+            "stroke": "#ff9900",
+            "fill": "#fff3e0",
+            "label": true
+        },
+        "nodes": [
+            "node_inject_loop",
+            "node_main_logic",
+            "node_ha_api_post"
+        ],
+        "x": 34,
+        "y": 459,
+        "w": 652,
+        "h": 162
+    },
+    {
+        "id": "node_http_get_employees",
+        "type": "http in",
+        "z": "tab_employee_manager",
+        "g": "group_api",
+        "name": "GET /api/employees",
+        "url": "/api/employees",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 80,
+        "wires": [
+            [
+                "node_file_read_employees"
+            ]
+        ]
+    },
+    {
+        "id": "node_file_read_employees",
+        "type": "file in",
+        "z": "tab_employee_manager",
+        "name": "Read employees.json",
+        "filename": "/data/employees.json",
+        "format": "json",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 420,
+        "y": 80,
+        "wires": [
+            [
+                "node_http_res_json"
+            ]
+        ]
+    },
+    {
+        "id": "node_http_res_json",
+        "type": "http response",
+        "z": "tab_employee_manager",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "content-type": "application/json"
+        },
+        "x": 630,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "node_http_post_employees",
+        "type": "http in",
+        "z": "tab_employee_manager",
+        "g": "group_api",
+        "name": "POST /api/employees",
+        "url": "/api/employees",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 140,
+        "wires": [
+            [
+                "node_func_add_employee"
+            ]
+        ]
+    },
+    {
+        "id": "node_func_add_employee",
+        "type": "function",
+        "z": "tab_employee_manager",
+        "name": "Add Employee",
+        "func": "// Czytamy plik ręcznie lub zakładamy, że flow context ma dane\n// Dla uproszczenia czytamy plik w locie w Function (niezalecane przy dużym ruchu) \n// LUB używamy File Node. Użyjmy sekwencji.\n\nmsg.newEmployee = msg.payload;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 140,
+        "wires": [
+            [
+                "node_file_read_write_add"
+            ]
+        ]
+    },
+    {
+        "id": "node_file_read_write_add",
+        "type": "function",
+        "z": "tab_employee_manager",
+        "name": "Read-Modify-Save",
+        "func": "const fs = global.get('os').fs || require('fs');\nconst path = '/data/employees.json';\n\nlet employees = [];\ntry {\n    if (fs.existsSync(path)) {\n        employees = JSON.parse(fs.readFileSync(path, 'utf8'));\n    }\n} catch(e) {}\n\n// Remove existing if name match\nconst newEmp = msg.newEmployee;\nemployees = employees.filter(e => e.name !== newEmp.name);\nemployees.push(newEmp);\n\nfs.writeFileSync(path, JSON.stringify(employees, null, 4));\n\nmsg.payload = { status: \"ok\" };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 180,
+        "wires": [
+            [
+                "node_http_res_json"
+            ]
+        ]
+    },
+    {
+        "id": "node_http_delete_employees",
+        "type": "http in",
+        "z": "tab_employee_manager",
+        "g": "group_api",
+        "name": "DELETE /api/employees/:id",
+        "url": "/api/employees/:id",
+        "method": "delete",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 170,
+        "y": 200,
+        "wires": [
+            [
+                "node_func_delete_employee"
+            ]
+        ]
+    },
+    {
+        "id": "node_func_delete_employee",
+        "type": "function",
+        "z": "tab_employee_manager",
+        "name": "Delete Logic",
+        "func": "const fs = global.get('os').fs || require('fs');\nconst path = '/data/employees.json';\nconst index = parseInt(msg.req.params.id);\n\nlet employees = [];\ntry {\n    if (fs.existsSync(path)) {\n        employees = JSON.parse(fs.readFileSync(path, 'utf8'));\n    }\n} catch(e) {}\n\nif (index >= 0 && index < employees.length) {\n    const toDelete = employees[index];\n    // Tu można dodać logikę czyszczenia sensorów (API call do HA)\n    // Ale Garbage Collector w głównej pętli i tak to wyczyści.\n    employees.splice(index, 1);\n    fs.writeFileSync(path, JSON.stringify(employees, null, 4));\n}\n\nmsg.payload = { status: \"ok\" };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 220,
+        "wires": [
+            [
+                "node_http_res_json"
+            ]
+        ]
+    },
+    {
+        "id": "node_http_monitor",
+        "type": "http in",
+        "z": "tab_employee_manager",
+        "g": "group_api",
+        "name": "GET /api/monitor",
+        "url": "/api/monitor",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 260,
+        "wires": [
+            [
+                "node_func_monitor_data"
+            ]
+        ]
+    },
+    {
+        "id": "node_func_monitor_data",
+        "type": "function",
+        "z": "tab_employee_manager",
+        "name": "Build Monitor Data",
+        "func": "const fs = global.get('os').fs || require('fs');\nconst path = '/data/employees.json';\nconst haStates = global.get('homeassistant.homeAssistant.states');\n\nlet employees = [];\ntry {\n    if (fs.existsSync(path)) {\n        employees = JSON.parse(fs.readFileSync(path, 'utf8'));\n    }\n} catch(e) {}\n\nlet result = [];\n\nemployees.forEach(emp => {\n    let safe = emp.name.toLowerCase().replace(/ /g, \"_\");\n    \n    // Pobieramy stany z cache Home Assistanta (global context)\n    let statusEnt = haStates[`sensor.${safe}_status`];\n    let timeEnt = haStates[`sensor.${safe}_czas_pracy`];\n    \n    let status = statusEnt ? statusEnt.state : \"N/A\";\n    let time = timeEnt ? timeEnt.state : \"0\";\n    \n    let measurements = [];\n    if(emp.sensors) {\n        emp.sensors.forEach(sid => {\n            let s = haStates[sid];\n            measurements.push({\n                label: sid,\n                value: s ? s.state : \"-\",\n                unit: s && s.attributes ? s.attributes.unit_of_measurement : \"\"\n            });\n        });\n    }\n    \n    result.push({\n        name: emp.name,\n        status: status,\n        work_time: time,\n        measurements: measurements\n    });\n});\n\nmsg.payload = result;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 260,
+        "wires": [
+            [
+                "node_http_res_json"
+            ]
+        ]
+    },
+    {
+        "id": "node_http_root",
+        "type": "http in",
+        "z": "tab_employee_manager",
+        "g": "group_api",
+        "name": "GET / (Index)",
+        "url": "/",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 130,
+        "y": 320,
+        "wires": [
+            [
+                "node_get_clean_sensors_func"
+            ]
+        ]
+    },
+    {
+        "id": "node_get_clean_sensors_func",
+        "type": "function",
+        "z": "tab_employee_manager",
+        "name": "Prepare Index Data",
+        "func": "// Ta funkcja robi to samo co get_clean_sensors() w Pythonie\n// Filtruje sensory do wyświetlenia w dropdownie\n\nconst haStates = global.get('homeassistant.homeAssistant.states');\nlet sensors = [];\n\nconst BLOCK_PREFIXES = [\"sensor.backup_\", \"sensor.sun_\", \"sensor.date\", \"sensor.time\", \"person.\", \"zone.\"];\nconst GLOBAL_BLACKLIST = [\"update\", \"install\", \"iphone\", \"router\"];\n\nfor (const [entity_id, entity] of Object.entries(haStates)) {\n    if (!entity_id.startsWith('sensor.') && !entity_id.startsWith('binary_sensor.')) continue;\n    \n    let attrs = entity.attributes || {};\n    if (attrs.managed_by === 'employee_manager') continue;\n    if (entity_id.endsWith('_status') || entity_id.endsWith('_czas_pracy')) continue;\n    \n    let friendly = (attrs.friendly_name || entity_id).toLowerCase();\n    \n    let blocked = false;\n    if (BLOCK_PREFIXES.some(p => entity_id.startsWith(p))) blocked = true;\n    if (GLOBAL_BLACKLIST.some(b => friendly.includes(b))) blocked = true;\n    \n    if (!blocked) {\n         sensors.push({\n             id: entity_id,\n             main_label: attrs.friendly_name || entity_id,\n             state: entity.state\n         });\n    }\n}\n\n// Sortowanie\nsensors.sort((a,b) => a.main_label.localeCompare(b.main_label));\n\nmsg.all_sensors = sensors;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 320,
+        "wires": [
+            [
+                "node_template_index"
+            ]
+        ]
+    },
+    {
+        "id": "node_template_index",
+        "type": "template",
+        "z": "tab_employee_manager",
+        "name": "Render index.html",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "\n<!DOCTYPE html>\n<html>\n<head>\n  <title>Employee Manager</title>\n  <meta charset=\"utf-8\">\n  \n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  \n  \n  <script>\n    window.ALL_SENSORS = {{{json all_sensors}}};\n  </script>\n  \n  <div id=\"app\">\n      <h1>Employee Manager</h1>\n      <p>Aplikacja ładuje się...</p>\n      \n  </div>\n\n  \n  <script src=\"script.js\"></script>\n</body>\n</html>",
+        "output": "str",
+        "x": 510,
+        "y": 320,
+        "wires": [
+            [
+                "node_http_res_html"
+            ]
+        ]
+    },
+    {
+        "id": "node_http_res_html",
+        "type": "http response",
+        "z": "tab_employee_manager",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 670,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "node_inject_loop",
+        "type": "inject",
+        "z": "tab_employee_manager",
+        "g": "group_logic",
+        "name": "Loop 10s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "10",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 500,
+        "wires": [
+            [
+                "node_main_logic"
+            ]
+        ]
+    },
+    {
+        "id": "node_main_logic",
+        "type": "function",
+        "z": "tab_employee_manager",
+        "name": "MAIN LOGIC (Python Port)",
+        "func": "const fs = global.get('os').fs || require('fs');\nconst haStates = global.get('homeassistant.homeAssistant.states');\n\nif (!haStates) return null; // Jeszcze nie ma połączenia z HA\n\nconst DATA_FILE = '/data/employees.json';\nconst STATUS_FILE = '/data/status.json';\n\n// 1. Ładowanie danych\nlet employees = [];\ntry {\n    if (fs.existsSync(DATA_FILE)) employees = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));\n} catch(e) {}\n\nlet statusData = { date: new Date().toISOString().slice(0,10), counters: {} };\ntry {\n    if (fs.existsSync(STATUS_FILE)) statusData = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));\n} catch(e) {}\n\nconst today = new Date().toISOString().slice(0,10);\nif (statusData.date !== today) {\n    // Reset dzienny\n    statusData.date = today;\n    statusData.counters = {};\n    // Tu można dodać zapis historii (pominięte dla czytelności)\n}\n\nlet updates = []; // Tablica wiadomości do wysłania do HA\n\nemployees.forEach(emp => {\n    const name = emp.name;\n    const safe = name.toLowerCase().replace(/ /g, \"_\");\n    let isWorking = false;\n    \n    // Sprawdzanie sensorów\n    if (emp.sensors) {\n        emp.sensors.forEach(eid => {\n            const entity = haStates[eid];\n            if (!entity || entity.state === 'unavailable') return;\n            \n            const val = parseFloat(entity.state);\n            const unit = entity.attributes.unit_of_measurement;\n            \n            // Logika progowa (W, kW)\n            if (unit === 'W' || unit === 'kW') {\n                let checkVal = val;\n                if (unit === 'kW') checkVal *= 1000;\n                if (checkVal > (parseFloat(emp.threshold) || 20)) isWorking = true;\n            }\n            \n            // Logika binarna\n            if (eid.startsWith('binary_sensor') && entity.state === 'on') isWorking = true;\n            \n            // Kopiowanie wartości do dedykowanego sensora pracownika (np. sensor.jan_moc)\n            // Tworzymy wiadomość do API HA\n            if (unit) {\n                // Uproszczenie: mapowanie suffixów można rozbudować\n                let suffix = unit === 'W' ? 'moc' : (unit === 'V' ? 'napiecie' : 'other');\n                if (suffix !== 'other') {\n                     updates.push({\n                        entity_id: `sensor.${safe}_${suffix}`,\n                        state: entity.state,\n                        attributes: {\n                            friendly_name: `${name} ${suffix}`,\n                            unit_of_measurement: unit,\n                            icon: entity.attributes.icon,\n                            managed_by: 'employee_manager'\n                        }\n                    });\n                }\n            }\n        });\n    }\n    \n    // Aktualizacja czasu\n    if (!statusData.counters[name]) statusData.counters[name] = 0;\n    if (isWorking) {\n        statusData.counters[name] += (10/60); // +10 sekund w minutach\n    }\n    \n    // Status główny\n    updates.push({\n        entity_id: `sensor.${safe}_status`,\n        state: isWorking ? \"Pracuje\" : \"Nieobecny\",\n        attributes: {\n            friendly_name: `${name} - Status`,\n            icon: isWorking ? \"mdi:laptop\" : \"mdi:account-off\",\n            managed_by: 'employee_manager'\n        }\n    });\n    \n    // Czas pracy\n    updates.push({\n        entity_id: `sensor.${safe}_czas_pracy`,\n        state: Math.round(statusData.counters[name] * 10) / 10,\n        attributes: {\n            friendly_name: `${name} - Czas`,\n            unit_of_measurement: \"min\",\n            icon: \"mdi:clock\",\n            managed_by: 'employee_manager'\n        }\n    });\n});\n\n// Zapis statusu\nfs.writeFileSync(STATUS_FILE, JSON.stringify(statusData, null, 4));\n\n// Wysyłanie aktualizacji do HA (batching lub pojedynczo)\n// Węzeł API obsługuje jedną wiadomość na raz, więc zwracamy tablicę wiadomości\nreturn updates.map(u => ({ \n    method: 'POST', \n    path: `/states/${u.entity_id}`, \n    payload: { state: u.state, attributes: u.attributes } \n}));",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 500,
+        "wires": [
+            [
+                "node_ha_api_post"
+            ]
+        ]
+    },
+    {
+        "id": "node_ha_api_post",
+        "type": "ha-api",
+        "z": "tab_employee_manager",
+        "name": "Update HA State",
+        "server": "",
+        "version": 1,
+        "debugenabled": false,
+        "protocol": "websocket",
+        "method": "post",
+        "path": "",
+        "data": "",
+        "dataType": "json",
+        "responseType": "json",
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "results"
+            }
+        ],
+        "x": 590,
+        "y": 500,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "node_get_clean_sensors_api",
+        "type": "http in",
+        "z": "tab_employee_manager",
+        "g": "group_api",
+        "name": "GET /api/sensors",
+        "url": "/api/sensors",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 360,
+        "wires": [
+            [
+                "node_get_clean_sensors_func_api"
+            ]
+        ]
+    },
+    {
+        "id": "node_get_clean_sensors_func_api",
+        "type": "function",
+        "z": "tab_employee_manager",
+        "name": "Get Sensors",
+        "func": "// Kopia logiki filtrowania sensorów\nconst haStates = global.get('homeassistant.homeAssistant.states');\nlet sensors = [];\n\nif (haStates) {\n    for (const [entity_id, entity] of Object.entries(haStates)) {\n        if (entity_id.startsWith('sensor.') || entity_id.startsWith('binary_sensor.')) {\n             if (entity.attributes && entity.attributes.managed_by === 'employee_manager') continue;\n             sensors.push({ id: entity_id, main_label: entity.attributes.friendly_name || entity_id });\n        }\n    }\n}\nmsg.payload = sensors;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 360,
+        "wires": [
+            [
+                "node_http_res_json"
+            ]
+        ]
+    }
+]

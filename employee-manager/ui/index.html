@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1><span class="mdi mdi-account-group"></span> Zespół</h1>
+            <button id="add-btn" class="btn-primary">
+                <span class="mdi mdi-plus"></span> Dodaj Pracownika
+            </button>
+        </header>
+
+        <div id="dashboard" class="grid-container">
+            <div class="loading">Ładowanie danych...</div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nowy Pracownik</h2>
+                <span id="close-modal" class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <label>Imię / Nazwa:</label>
+                <input type="text" id="emp-name" placeholder="np. Jan">
+
+                <label>Próg mocy (W) / Aktywności:</label>
+                <input type="number" id="emp-threshold" value="20">
+                <small>Powyżej tej wartości uznajemy, że pracuje.</small>
+
+                <label style="margin-top: 15px">Przypisz sensory:</label>
+                <div id="sensors-list" class="sensors-scroll">
+                    <p>Pobieranie sensorów...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-btn" class="btn-success">Zapisz</button>
+                <button id="cancel-btn" class="btn-secondary">Anuluj</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
