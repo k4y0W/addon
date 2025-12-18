@@ -32,7 +32,6 @@ RUN echo '#!/command/with-contenv bashio' > /etc/services.d/employee/run \
  && echo 'exec node-red -s /data/settings.js --max-old-space-size=256' >> /etc/services.d/employee/run \
  && chmod +x /etc/services.d/employee/run
  
- && chmod +x /etc/services.d/employee/run
 
 # Reszta argumentów budowania (opcjonalna, ale dobra praktyka)
 ARG BUILD_ARCH
