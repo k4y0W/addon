@@ -7,7 +7,8 @@ module.exports = {
     userDir: '/data/',
     flowFile: 'flows.json',
     functionGlobalContext: {
-        os: require('os') // Opcjonalne
+        fs: require('fs'), 
+        os: require('os')
     },
     logging: {
         console: {
