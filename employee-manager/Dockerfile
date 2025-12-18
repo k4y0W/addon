@@ -14,11 +14,10 @@ WORKDIR /usr/src/app
 COPY settings.js /usr/src/app/settings.js
 COPY flows.json /usr/src/app/flows.json
 COPY ui /usr/src/app/ui
-COPY run.sh /
+
 # 2. Tworzymy skrypt startowy, który kopiuje pliki do /data
 RUN mkdir -p /etc/services.d/employee
 
-RUN chmod a+x /run.sh
 RUN echo '#!/command/with-contenv bashio' > /etc/services.d/employee/run \
  && echo 'echo "▶️ Inicjalizacja Employee Manager..."' >> /etc/services.d/employee/run \
  && echo 'echo "⚙️ Kopiowanie settings.js..."' >> /etc/services.d/employee/run \
@@ -41,5 +40,3 @@ ARG BUILD_NAME
 ARG BUILD_REF
 ARG BUILD_REPOSITORY
 ARG BUILD_VERSION
-
-CMD [ "/run.sh" ]
