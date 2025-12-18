@@ -14,8 +14,8 @@ WORKDIR /usr/src/app
 COPY settings.js /usr/src/app/settings.js
 COPY flows.json /usr/src/app/flows.json
 COPY ui /usr/src/app/ui
+RUN chmod a+x /run.sh
 
-# 2. Tworzymy skrypt startowy, który kopiuje pliki do /data
 RUN mkdir -p /etc/services.d/employee
 
 RUN echo '#!/command/with-contenv bashio' > /etc/services.d/employee/run \
