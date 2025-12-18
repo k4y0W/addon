@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base:19.0.0
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:18.2.3
 FROM ${BUILD_FROM}
 
 RUN apk add --no-cache \
@@ -14,8 +14,7 @@ WORKDIR /usr/src/app
 COPY settings.js /usr/src/app/settings.js
 COPY flows.json /usr/src/app/flows.json
 COPY ui /usr/src/app/ui
-RUN chmod a+x /run.sh
-
+# 2. Tworzymy skrypt startowy, który kopiuje pliki do /data
 RUN mkdir -p /etc/services.d/employee
 
 RUN echo '#!/command/with-contenv bashio' > /etc/services.d/employee/run \
