@@ -25,11 +25,13 @@ RUN echo '#!/command/with-contenv bashio' > /etc/services.d/employee/run \
  && echo 'echo "⚙️ Kopiowanie UI..."' >> /etc/services.d/employee/run \
  && echo 'rm -rf /data/ui' >> /etc/services.d/employee/run \
  && echo 'cp -r /usr/src/app/ui /data/ui' >> /etc/services.d/employee/run \
- # Flows kopiujemy TYLKO jeśli nie istnieją (żeby nie nadpisać Twoich zmian)
- && echo 'if [ ! -f /data/flows.json ]; then echo "📄 Instalowanie domyślnych flows..."; cp /usr/src/app/flows.json /data/flows.json; fi' >> /etc/services.d/employee/run \
+ && echo 'echo "⚠️ WYMUSZANIE AKTUALIZACJI flows.json (Dev Mode)..."' >> /etc/services.d/employee/run \
+ && echo 'cp /usr/src/app/flows.json /data/flows.json' >> /etc/services.d/employee/run \
  && echo 'echo "🚀 Startowanie Node-RED..."' >> /etc/services.d/employee/run \
  && echo 'cd /data' >> /etc/services.d/employee/run \
  && echo 'exec node-red -s /data/settings.js --max-old-space-size=256' >> /etc/services.d/employee/run \
+ && chmod +x /etc/services.d/employee/run
+ 
  && chmod +x /etc/services.d/employee/run
 
 # Reszta argumentów budowania (opcjonalna, ale dobra praktyka)
